@@ -102,60 +102,81 @@ public class JdbcClient {
         return sb.toString();
     }
 
-    public List<List<Column>> select(String sqlQuery, List<Column> queryParams) {
-        Connection connection = null;
-        try {
-            connection = connectionProvider.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sqlQuery);
-            if(queryTimeoutSecs > 0) {
-                preparedStatement.setQueryTimeout(queryTimeoutSecs);
-            }
-            setPreparedStatementParams(preparedStatement, queryParams);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            List<List<Column>> rows = Lists.newArrayList();
-            while(resultSet.next()){
-                ResultSetMetaData metaData = resultSet.getMetaData();
-                int columnCount = metaData.getColumnCount();
-                List<Column> row = Lists.newArrayList();
-                for(int i=1 ; i <= columnCount; i++) {
-                    String columnLabel = metaData.getColumnLabel(i);
-                    int columnType = metaData.getColumnType(i);
-                    Class columnJavaType = Util.getJavaType(columnType);
-                    if (columnJavaType.equals(String.class)) {
-                        row.add(new Column<String>(columnLabel, resultSet.getString(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Integer.class)) {
-                        row.add(new Column<Integer>(columnLabel, resultSet.getInt(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Double.class)) {
-                        row.add(new Column<Double>(columnLabel, resultSet.getDouble(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Float.class)) {
-                        row.add(new Column<Float>(columnLabel, resultSet.getFloat(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Short.class)) {
-                        row.add(new Column<Short>(columnLabel, resultSet.getShort(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Boolean.class)) {
-                        row.add(new Column<Boolean>(columnLabel, resultSet.getBoolean(columnLabel), columnType));
-                    } else if (columnJavaType.equals(byte[].class)) {
-                        row.add(new Column<byte[]>(columnLabel, resultSet.getBytes(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Long.class)) {
-                        row.add(new Column<Long>(columnLabel, resultSet.getLong(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Date.class)) {
-                        row.add(new Column<Date>(columnLabel, resultSet.getDate(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Time.class)) {
-                        row.add(new Column<Time>(columnLabel, resultSet.getTime(columnLabel), columnType));
-                    } else if (columnJavaType.equals(Timestamp.class)) {
-                        row.add(new Column<Timestamp>(columnLabel, resultSet.getTimestamp(columnLabel), columnType));
-                    } else {
-                        throw new RuntimeException("type =  " + columnType + " for column " + columnLabel + " not supported.");
-                    }
-                }
-                rows.add(row);
-            }
-            return rows;
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to execute select query " + sqlQuery, e);
-        } finally {
-            closeConnection(connection);
+   //INIZIO
+   public List<List<Column>> select(String sqlQuery, List<Column> queryParams) {
+       try (Connection connection = connectionProvider.getConnection();
+            PreparedStatement preparedStatement = createPreparedStatement(connection, sqlQuery, queryParams);
+            ResultSet resultSet = preparedStatement.executeQuery()) {
+
+           List<List<Column>> rows = new ArrayList<>();
+           ResultSetMetaData metaData = resultSet.getMetaData();
+           int columnCount = metaData.getColumnCount();
+
+           while (resultSet.next()) {
+               List<Column> row = new ArrayList<>();
+               for (int i = 1; i <= columnCount; i++) {
+                   row.add(mapColumn(resultSet, metaData, i));
+               }
+               rows.add(row);
+           }
+           return rows;
+
+       } catch (SQLException e) {
+           throw new RuntimeException("Failed to execute select query " + sqlQuery, e);
+       }
+   }
+
+    private PreparedStatement createPreparedStatement(Connection connection, String sqlQuery, List<Column> queryParams) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(sqlQuery);
+        if (queryTimeoutSecs > 0) {
+            preparedStatement.setQueryTimeout(queryTimeoutSecs);
         }
+        setPreparedStatementParams(preparedStatement, queryParams);
+        return preparedStatement;
     }
+
+    private static final Map<Class<?>, ResultSetReader<?>> READERS = new HashMap<>();
+    static {
+        READERS.put(String.class, ResultSet::getString);
+        READERS.put(Integer.class, ResultSet::getInt);
+        READERS.put(Double.class, ResultSet::getDouble);
+        READERS.put(Float.class, ResultSet::getFloat);
+        READERS.put(Short.class, ResultSet::getShort);
+        READERS.put(Boolean.class, ResultSet::getBoolean);
+        READERS.put(byte[].class, ResultSet::getBytes);
+        READERS.put(Long.class, ResultSet::getLong);
+        READERS.put(Date.class, ResultSet::getDate);
+        READERS.put(Time.class, ResultSet::getTime);
+        READERS.put(Timestamp.class, ResultSet::getTimestamp);
+    }
+
+    @FunctionalInterface
+    private interface ResultSetReader<T> {
+        T read(ResultSet rs, String label) throws SQLException;
+    }
+
+    private Column mapColumn(ResultSet resultSet, ResultSetMetaData metaData, int index) throws SQLException {
+        String columnLabel = metaData.getColumnLabel(index);
+        int columnType = metaData.getColumnType(index);
+        Class<?> columnJavaType = Util.getJavaType(columnType);
+
+        ResultSetReader<?> reader = READERS.get(columnJavaType);
+        if (reader == null) {
+            throw new RuntimeException("Unsupported type " + columnType + " for column " + columnLabel);
+        }
+
+        Object value = reader.read(resultSet, columnLabel);
+        return new Column(columnLabel, value, columnType);
+    }
+
+
+
+
+
+
+
+
+    //FINE
 
     public List<Column> getColumnSchema(String tableName) {
         Connection connection = null;
