@@ -22,6 +22,8 @@ import static org.apache.storm.spout.CheckPointState.Action;
 import static org.apache.storm.spout.CheckPointState.State.COMMITTED;
 
 import java.util.Map;
+import java.util.Optional;
+
 import org.apache.storm.Config;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.state.StateFactory;
@@ -152,7 +154,7 @@ public class CheckpointSpout extends BaseRichSpout {
         }
         // ensure checkpoint interval is not less than a sane low value.
         interval = Math.max(100, interval);
-        LOG.info("Checkpoint interval is {} millis", interval);
+        LOG.info("Checkpoint interval is {} millis", Optional.of(interval));
         return interval;
     }
 
@@ -202,7 +204,7 @@ public class CheckpointSpout extends BaseRichSpout {
     }
 
     private void emit(long txid, Action action) {
-        LOG.debug("Current state {}, emitting txid {}, action {}", curTxState, txid, action);
+        LOG.debug("Current state {}, emitting txid {}, action {}", (Object) curTxState, txid, action);
         collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
     }
 
