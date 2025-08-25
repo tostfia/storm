@@ -184,6 +184,8 @@
         <module>storm-clojure</module>
         <module>storm-clojure-test</module>
         <module>storm-submit-tools</module>
+        <!--addition-->
+        <module>jacoco</module>
     </modules>
 
     <dependencies>
@@ -1209,6 +1211,18 @@
                 <artifactId>avro</artifactId>
                 <version>1.12.0</version>
             </dependency>
+            <!--Added fro jacoco-->
+            <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+            </dependency>
+            <dependency>
+                <groupId>org.evosuite</groupId>
+                <artifactId>evosuite-standalone-runtime</artifactId>
+                <version>1.2.0</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
@@ -1309,6 +1323,7 @@
                         </generatedSourcesDirectory>
                     </configuration>
                 </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -1325,6 +1340,26 @@
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.12</version>
+                </plugin>
+
+                <!-- PIT -->
+                <plugin>
+                    <groupId>org.pitest</groupId>
+                    <artifactId>pitest-maven</artifactId>
+                    <version>1.16.6</version>
+                </plugin>
+
+                <!-- EvoSuite -->
+                <plugin>
+                    <groupId>org.evosuite.plugins</groupId>
+                    <artifactId>evosuite-maven-plugin</artifactId>
+                    <version>1.2.0</version>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
@@ -1346,6 +1381,30 @@
                         </execution>
                     </executions>
                 </plugin>
+                <!-- addition  to run JACOCO -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                    <configuration>
+                        <excludedGroups>flaky</excludedGroups>
+                    </configuration>
+                </plugin> <!-- addition  to run JACOCO -->
+                <!-- addition run JACOCO
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-surefire-plugin</artifactId>
+                  <configuration>
+                    <argLine>-Xmx2G -Dsun.net.inetaddr.ttl=1 -Dsun.net.inetaddr.negative.ttl=1 -Djava.net.preferIPv4Stack=true -Dio.netty.leakDetection.level=paranoid ${test.additional.args}</argLine>
+                    <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
+                    <forkCount>${forkCount.variable}</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <trimStackTrace>false</trimStackTrace>
+                    <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
+                    <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
+                  </configuration>
+                </plugin>
+                  addition  run JACOCO -->
                 <plugin>
                     <!--To support checkstyle goals. For example: "mvn checkstyle:checkstyle"-->
                     <groupId>org.apache.maven.plugins</groupId>
@@ -1650,7 +1709,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jxr-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>1.6.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -1666,7 +1725,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>taglist-maven-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>1.6.0</version>
                 <configuration>
                     <tagListOptions>
                         <tagClasses>

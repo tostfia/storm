@@ -109,7 +109,7 @@ public class CheckpointSpout extends BaseRichSpout {
                 handleCheckpointAck();
             }
         } else {
-            LOG.warn("Ack msgid {}, txState.txid {} mismatch", msgId, curTxState.getTxid());
+            LOG.warn("Ack msgid {}, txState.txid {} mismatch", msgId, (Object) curTxState.getTxid());
         }
         resetProgress();
     }
@@ -135,7 +135,7 @@ public class CheckpointSpout extends BaseRichSpout {
     private KeyValueState<String, CheckPointState> loadCheckpointState(Map<String, Object> conf, TopologyContext ctx) {
         String namespace = ctx.getThisComponentId() + "-" + ctx.getThisTaskId();
         KeyValueState<String, CheckPointState> state =
-            (KeyValueState<String, CheckPointState>) StateFactory.getState(namespace, conf, ctx);
+                (KeyValueState<String, CheckPointState>) StateFactory.getState(namespace, conf, ctx);
         if (state.get(TX_STATE_KEY) == null) {
             CheckPointState txState = new CheckPointState(-1, COMMITTED);
             state.put(TX_STATE_KEY, txState);
@@ -204,7 +204,7 @@ public class CheckpointSpout extends BaseRichSpout {
     }
 
     private void emit(long txid, Action action) {
-        LOG.debug("Current state {}, emitting txid {}, action {}", (Object) curTxState, txid, action);
+        LOG.debug("Current state {}, emitting txid {}, action {}", (Object) curTxState, (Object) txid, action);
         collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
     }
 
