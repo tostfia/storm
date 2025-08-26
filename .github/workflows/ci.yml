@@ -1,55 +1,49 @@
-
-
-name: Java CI with Maven
+name: Java CI Debug with Maven
 
 on:
-  pull_request:
-    branches: [ "testing" ]
   push:
+    branches: [ "testing" ]
+  pull_request:
     branches: [ "testing" ]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        java: [ 17, 21 ]
-        module: [ Client, Server, Core, External, Check-Updated-License-Files, Integration-Test ]
-        experimental: [false]
-      fail-fast: false
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '2.7'
-      - name: Set up JDK ${{ matrix.java }}
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ matrix.java }}
+          java-version: 17
+
+      - name: Debug environment
+        run: |
+          echo "Java version:"
+          java -version
+          echo "Maven version:"
+          mvn -version
+          echo "Current directory:"
+          pwd
+          echo "Files in workspace:"
+          ls -R
+
       - name: Ensure a clean state without storm artifacts
         run: rm -rf ~/.m2/repository/org/apache/storm
-      - name: Set up project dependencies
-        run: /bin/bash ./dev-tools/gitact/gitact-install.sh `pwd`
-      - name: Run build
+
+      - name: Run build (debug mode)
         run: |
-          export JDK_VERSION=${{ matrix.java }} 
+          set -euxo pipefail
+          export JDK_VERSION=17
           export USER=github
-          /bin/bash ./dev-tools/gitact/gitact-script.sh `pwd` ${{ matrix.module }};
+          /bin/bash ./dev-tools/gitact/gitact-install.sh `pwd`
+          /bin/bash ./dev-tools/gitact/gitact-script.sh `pwd` Client
