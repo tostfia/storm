@@ -9,37 +9,32 @@ import org.junit.runners.Parameterized;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 @RunWith(Parameterized.class)
 public class SetBlobStoreTest {
 
-    private final ClientBlobStore paramBlobStore;
-    private final Class<? extends Throwable> expectedOverallExceptionType;
-    private final String testDescription;
+    @Parameterized.Parameter(0)
+    public ClientBlobStore paramBlobStore;
+
+    @Parameterized.Parameter(1)
+    public String testDescription;
+
+    @Mock
+    private ClientBlobStore mockBlobStore;
 
     private DependencyUploader dependencyUploader;
 
-    public SetBlobStoreTest(ClientBlobStore paramBlobStore, Class<? extends Throwable> expectedOverallExceptionType, String testDescription) {
-        this.paramBlobStore = paramBlobStore;
-        this.expectedOverallExceptionType = expectedOverallExceptionType;
-        this.testDescription = testDescription;
-    }
-
-    @Parameterized.Parameters(name = "{index}: {2}")
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-                // Partizione: Input valido (ClientBlobStore non nullo)
-                {mock(ClientBlobStore.class), null, "setBlobStore - ClientBlobStore valido"},
-                // Partizione: Input nullo
-                {null, null, "setBlobStore - ClientBlobStore nullo"}, // Setter dovrebbe accettare null senza eccezioni
-        });
+    @Parameterized.Parameters(name = "{index}: {1}")
+    public static Object[][] data() {
+        return new Object[][]{
+                {mock(ClientBlobStore.class), "ClientBlobStore valido"},
+                {null, "ClientBlobStore nullo"}
+        };
     }
 
     @Before
@@ -54,24 +49,27 @@ public class SetBlobStoreTest {
     }
 
     @Test
-    public void setBlobStoreTest() {
+    public void setBlobStoreTest() throws Exception {
         System.out.println("Eseguendo test SET_BLOB_STORE: " + testDescription);
 
+        // Chiamata al setter
+        dependencyUploader.setBlobStore(paramBlobStore);
+
+        // Verifica indiretta: chiama deleteBlobs e controlla comportamento
+        List<String> keys = Collections.singletonList("key1");
+
         try {
-            dependencyUploader.setBlobStore(paramBlobStore);
-            if (expectedOverallExceptionType != null) {
-                fail("Prevista eccezione di tipo " + expectedOverallExceptionType.getSimpleName() + " ma nessuna eccezione è stata lanciata.");
-            }
-
-
-        } catch (Throwable caughtException) {
-            if (expectedOverallExceptionType == null) {
-                fail("Nessuna eccezione prevista, ma è stata catturata: " + caughtException.getClass().getSimpleName() + " con messaggio: " + caughtException.getMessage());
-            }
-            assertEquals("Tipo di eccezione atteso " + expectedOverallExceptionType.getSimpleName() +
-                            " ma catturato " + caughtException.getClass().getSimpleName(),
-                    expectedOverallExceptionType, caughtException.getClass());
+            dependencyUploader.deleteBlobs(keys);
+        } catch (Throwable e) {
+            fail("deleteBlobs non dovrebbe propagare eccezioni, anche se blobStore è nullo");
         }
-        System.out.println("Parametro setBlobStore passato: " + (paramBlobStore == null ? "null" : paramBlobStore.getClass().getSimpleName()));
+
+        // Se blobStore è valido, verifica che deleteBlob sia stato chiamato
+        if (paramBlobStore != null) {
+            verify(paramBlobStore).deleteBlob("key1");
+        }
+
+        System.out.println("Parametro setBlobStore passato: " +
+                (paramBlobStore == null ? "null" : paramBlobStore.getClass().getSimpleName()));
     }
 }

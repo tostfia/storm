@@ -1,8 +1,6 @@
 package org.apache.storm.dependency;
 
 import org.apache.storm.blobstore.ClientBlobStore;
-import org.apache.storm.generated.AuthorizationException;
-import org.apache.storm.generated.KeyNotFoundException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,15 +9,10 @@ import org.junit.runners.Parameterized;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @RunWith(Parameterized.class)
@@ -55,49 +48,53 @@ public class DeleteBlobsTest {
     public void teardown() {
         // eventual shutdown
     }
+
     @Parameterized.Parameters(name = "{index}: {3}")
-    public static Object[][] data() {
-        return new Object[][]{
-                {Arrays.asList("blob1","blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Due blob validi"},
-                {List.of(), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Lista vuota"},
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][]{
                 {null, TestResult.NULL_POINTER_EXCEPTION, Collections.emptyMap(), "Lista null"},
+                {Collections.emptyList(), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Lista vuota"},
+                {Arrays.asList("blob1","blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Due blob validi"},
                 {Collections.singletonList((String) null), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob null gestito"},
                 {Arrays.asList("blob1", null, "blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob misti con null"},
-                {Arrays.asList("failKey","successKey"), TestResult.NO_EXCEPTION, Map.of("failKey", new RuntimeException("Simulato fallimento")), "Blob fallisce parzialmente"}
-        };
+                {Arrays.asList("ok1","fail1","ok2", null, "fail2"),
+                        TestResult.NO_EXCEPTION,
+                        Map.of(
+                                "fail1", new RuntimeException("Simulato fail1"),
+                                "fail2", new RuntimeException("Simulato fail2")
+                        ),
+                        "Blob con eccezioni parziali, ciclo continua"}
+        });
     }
 
-
     @Test
-    public void deleteBlobsTest() {
+    public void deleteBlobsTest() throws Exception {
         System.out.println("Eseguendo test: " + testDescription);
 
-        // Configura i throw del mock
-        blobStoreThrowables.forEach((k, ex) -> {
-            if (k == null) {
+        // Configura eccezioni sui mock
+        if (blobStoreThrowables != null) {
+            blobStoreThrowables.forEach((key, ex) -> {
                 try {
-                    doThrow(ex).when(mockBlobStore).deleteBlob(isNull());
-                } catch (AuthorizationException | KeyNotFoundException e) {
+                    if (key == null) {
+                        doThrow(ex).when(mockBlobStore).deleteBlob(isNull());
+                    } else {
+                        doThrow(ex).when(mockBlobStore).deleteBlob(eq(key));
+                    }
+                } catch (Throwable e) {
                     throw new RuntimeException(e);
                 }
-            } else {
-                try {
-                    doThrow(ex).when(mockBlobStore).deleteBlob(eq(k));
-                } catch (AuthorizationException | KeyNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+            });
+        }
 
         try {
             dependencyUploader.deleteBlobs(keysParam);
 
             assertEquals(TestResult.NO_EXCEPTION, expectedOverallResult);
 
+            // Verifica che deleteBlob sia stato chiamato per tutte le chiavi (anche null)
             if (keysParam != null) {
-                for (String k : keysParam) {
-                    if (k == null) verify(mockBlobStore).deleteBlob(isNull());
-                    else verify(mockBlobStore).deleteBlob(eq(k));
+                for (String key : keysParam) {
+                    verify(mockBlobStore).deleteBlob(key);
                 }
             } else {
                 verifyNoInteractions(mockBlobStore);
