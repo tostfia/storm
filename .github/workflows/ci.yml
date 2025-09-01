@@ -38,17 +38,29 @@ jobs:
     - name: Build with Maven
       run: mvn clean install --batch-mode
 
+    - name: Check if Dependency Graph is enabled
+      id: check_graph
+      run: |
+        RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.MY_PAT_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/vulnerability-alerts)
+        if [[ "$RESPONSE" == *"true"* ]]; then
+          echo "Dependency Graph is enabled"
+          echo "enabled=true" >> $GITHUB_ENV
+        else
+          echo "Dependency Graph is NOT enabled"
+          echo "enabled=false" >> $GITHUB_ENV
+        fi
+
     - name: Submit Maven dependencies
+      if: env.enabled == 'true'
       uses: github/advanced-security/maven-dependency-submission-action@v1
       with:
         github-token: ${{ secrets.MY_PAT_TOKEN }}
       continue-on-error: true
 
-    - name: Check dependency submission result
+    - name: Warn if Dependency Graph disabled
+      if: env.enabled == 'false'
       run: |
-        if [[ "${{ steps.submit-deps.outcome }}" == "failure" ]]; then
-          echo " La submission delle dipendenze non è riuscita. Controlla che il Dependency Graph sia abilitato."
-        else
-          echo " Dipendenze inviate correttamente a GitHub Advanced Security."
-        fi
+        echo "⚠️ Dependency Graph is disabled. Skipping submission of Maven dependencies."
 
