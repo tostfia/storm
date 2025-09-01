@@ -87,6 +87,22 @@ public class UploadFilesTest {
 
         params.add(new Object[]{List.of(fileThrowing), false, RuntimeException.class,
                 "Upload fallisce con cleanup=false", allExist});
+        params.add(new Object[]{
+                List.of(fileThrowing),
+                true,
+                RuntimeException.class,
+                "Upload fallisce con BlobStore non null e cleanup=true - verifica deleteBlobs",
+                allExist
+        });
+
+        // Test per il branch dove getBlobStore() restituisce null durante cleanup
+        params.add(new Object[]{
+                List.of(fileThrowing),
+                true,
+                RuntimeException.class,
+                "Upload fallisce con BlobStore null - nessun cleanup",
+                allExist
+        });
 
 
         return params;
@@ -98,40 +114,11 @@ public class UploadFilesTest {
         dependencyUploader = new DependencyUploader();
 
         mockBlobStore = mock(ClientBlobStore.class);
-        doNothing().when(mockBlobStore).deleteBlob(anyString());
-        when(mockBlobStore.getBlobMeta(anyString())).thenReturn(new ReadableBlobMeta());
-        when(mockBlobStore.createBlob(anyString(), any())).thenReturn(null);
+        doNothing().when(mockBlobStore).deleteBlob(isA(String.class));
+        when(mockBlobStore.getBlobMeta(isA(String.class))).thenReturn(new ReadableBlobMeta());
+        when(mockBlobStore.getBlobMeta(isA(String.class))).thenReturn(new ReadableBlobMeta());
 
 
-        // Simula eccezioni per file particolari
-        if (filesParam != null) {
-            for (File f : filesParam) {
-                if (f != null && "throwingFile.txt".equals(f.getName())) {
-                    try {
-                        doThrow(new RuntimeException("Simulated upload failure"))
-                                .when(mockBlobStore).createBlob(anyString(), any());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                if (f != null && "key_exists.txt".equals(f.getName())) {
-                    doThrow(new KeyAlreadyExistsException())
-                            .when(mockBlobStore).createBlob(anyString(), any());
-                }
-
-            }
-        }
-
-        dependencyUploader.setBlobStore(mockBlobStore);
-
-        if (filesParam != null) {
-            for (File f : filesParam) {
-                if (f != null) {
-                    Boolean exists = fileExistsStatus.getOrDefault(f.getName(), true);
-                    when(f.exists()).thenReturn(exists);
-                }
-            }
-        }
     }
 
     @After

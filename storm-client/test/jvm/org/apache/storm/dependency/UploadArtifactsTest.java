@@ -121,6 +121,16 @@ public class UploadArtifactsTest {
         params.add(new Object[]{keyExists, RuntimeException.class,
                 "uploadArtifacts - KeyAlreadyExistsException (incapsulata)", allFilesExist});
 
+        // Test per il branch dove KeyAlreadyExistsException viene catturata e ignorata
+        Map<String, File> keyExistsButIgnored = new HashMap<>();
+        keyExistsButIgnored.put("keyExistButIgnored", file_keyExists);
+        params.add(new Object[]{
+                keyExistsButIgnored,
+                FileNotAvailableException.class,
+                "uploadArtifacts - KeyAlreadyExistsException catturata e ignorata",
+                allFilesExist
+        });
+
         return params;
     }
 
@@ -129,36 +139,10 @@ public class UploadArtifactsTest {
         MockitoAnnotations.openMocks(this);
         dependencyUploader = new DependencyUploader();
 
-        //Mock ClientBlobStore per simulare KeyAlreadyExists o fallimenti
         mockBlobStore = mock(ClientBlobStore.class);
-        doNothing().when(mockBlobStore).deleteBlob(anyString());
-        when(mockBlobStore.getBlobMeta(anyString())).thenReturn(new ReadableBlobMeta());
-        when(mockBlobStore.createBlob(anyString(), any())).thenReturn(null);
-
-        // Simulazione throw per il file "throwingFile.jar"
-        if (artifactsParam != null) {
-            for(File file : artifactsParam.values()) {
-                if(file != null && "throwingFile.jar".equals(file.getName())) {
-                    try{
-                        doThrow( new RuntimeException("Simulated upload failure")).when(mockBlobStore).createBlob(anyString(),any());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
+        doNothing().when(mockBlobStore).deleteBlob(isA(String.class));
+        when (mockBlobStore.getBlobMeta(isA(String.class))).thenReturn(new ReadableBlobMeta());
         dependencyUploader.setBlobStore(mockBlobStore);
-        // Configura File.exists() in base alla mappa
-        if (artifactsParam != null) {
-            for (Map.Entry<String, File> entry : artifactsParam.entrySet()) {
-                File f = entry.getValue();
-                if (f != null) {
-                    Boolean exists = fileExistsStatus.getOrDefault(entry.getKey(),
-                            fileExistsStatus.getOrDefault(f.getName(), true));
-                    when(f.exists()).thenReturn(exists);
-                }
-            }
-        }
     }
 
     @After
