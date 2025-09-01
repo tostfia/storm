@@ -38,12 +38,11 @@ jobs:
     - name: Build with Maven
       run: mvn clean install --batch-mode
 
-    - name: Submit Maven dependencies to GitHub Advanced Security
-      id: submit-deps
+    - name: Submit Maven dependencies
       uses: github/advanced-security/maven-dependency-submission-action@v1
-      continue-on-error: true   # evita che il workflow fallisca se c'è un problema
       with:
         github-token: ${{ secrets.MY_PAT_TOKEN }}
+      continue-on-error: true
 
     - name: Check dependency submission result
       run: |
