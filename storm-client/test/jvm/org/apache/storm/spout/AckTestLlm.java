@@ -4,7 +4,6 @@ package org.apache.storm.spout;
 
 import static org.mockito.Mockito.*;
 
-import org.apache.storm.spout.CheckPointState.State;
 
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.task.TopologyContext;
@@ -21,7 +20,7 @@ public class AckTestLlm {
     public void setup() {
         spout = new CheckpointSpout();
         state = mock(KeyValueState.class);
-        CheckPointState initialState = new CheckPointState(42L, State.PREPARING);
+        CheckPointState initialState = new CheckPointState(42L, CheckPointState.State.PREPARING);
         when(state.get("__state")).thenReturn(initialState);
         spout.open(mock(TopologyContext.class), mock(SpoutOutputCollector.class), 1000, state);
     }

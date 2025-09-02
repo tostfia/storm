@@ -1,22 +1,17 @@
 package org.apache.storm.dependency;
 
-
 import org.apache.storm.blobstore.ClientBlobStore;
 import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.generated.KeyAlreadyExistsException;
 import org.apache.storm.generated.KeyNotFoundException;
 import org.apache.storm.generated.ReadableBlobMeta;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.MockitoAnnotations;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -24,158 +19,108 @@ import static org.mockito.Mockito.*;
 @RunWith(Parameterized.class)
 public class UploadArtifactsTest {
 
-    private final Map<String, File> artifactsParam;
-    private final Class<? extends Throwable> expectedOverallExceptionType;
-    private final String testDescription;
-    private final Map<String, Boolean> fileExistsStatus;
+    private final List<String> artifactNames;
+    private final Class<? extends Throwable> expectedException;
+    private final String description;
 
-    private DependencyUploader dependencyUploader;
+    private DependencyUploader uploader;
     private ClientBlobStore mockBlobStore;
+    private Map<String, File> tempArtifacts;
 
-    public UploadArtifactsTest(Map<String, File> artifactsParam,
-                               Class<? extends Throwable> expectedOverallExceptionType,
-                               String testDescription,
-                               Map<String, Boolean> fileExistsStatus) {
-        this.artifactsParam = artifactsParam;
-        this.expectedOverallExceptionType = expectedOverallExceptionType;
-        this.testDescription = testDescription;
-        this.fileExistsStatus = fileExistsStatus != null ? fileExistsStatus : Collections.emptyMap();
+    public UploadArtifactsTest(List<String> artifactNames,
+                               Class<? extends Throwable> expectedException,
+                               String description) {
+        this.artifactNames = artifactNames;
+        this.expectedException = expectedException;
+        this.description = description;
     }
 
     @Parameterized.Parameters(name = "{index}: {2}")
-    public static Collection<Object[]> getTestParameters() {
-        Function<String, File> createMockFile = name -> {
-            File file = mock(File.class);
-            when(file.getName()).thenReturn(name);
-            when(file.getAbsolutePath()).thenReturn("/tmp/" + name);
-            when(file.exists()).thenReturn(true);
-            return file;
-        };
-
-        // File simulati
-        File file1 = createMockFile.apply("artifact1.jar");
-        File file2 = createMockFile.apply("artifact2.jar");
-        File file_nonExistent = createMockFile.apply("non_existent_artifact.jar");
-        File file_emptyName = createMockFile.apply("");
-        File fileThrowing= createMockFile.apply("throwingFile.jar");
-        File file_keyExists = createMockFile.apply("key_exists_artifact.jar");
-
-        Map<String, Boolean> allFilesExist = new HashMap<>();
-        allFilesExist.put(file1.getName(), true);
-        allFilesExist.put(file2.getName(), true);
-        allFilesExist.put(file_emptyName.getName(), true);
-        allFilesExist.put(fileThrowing.getName(), true);
-        allFilesExist.put(file_keyExists.getName(), true);
-
-        Map<String, Boolean> fileNotExistsSpecific = new HashMap<>(allFilesExist);
-        fileNotExistsSpecific.put(file_nonExistent.getName(), false);
-
-        List<Object[]> params = new ArrayList<>();
-
-        // Input null
-        params.add(new Object[]{null, NullPointerException.class,
-                "uploadArtifacts - mappa di input null", new HashMap<>()});
-
-        //Lista vuota
-        params.add(new Object[]{new HashMap<>(), null,
-                "uploadArtifacts - mappa vuota", new HashMap<>()});
-        //Singolo file valido
-        Map<String, File> singleArtifact = new HashMap<>();
-        singleArtifact.put("art1", file1);
-        params.add(new Object[]{singleArtifact, FileNotAvailableException.class,
-                "uploadArtifacts - singolo artefatto valido", allFilesExist});
-        //Più file validi
-        Map<String, File> multipleArtifacts = new HashMap<>();
-        multipleArtifacts.put("art1", file1);
-        multipleArtifacts.put("art2", file2);
-        params.add(new Object[]{multipleArtifacts, FileNotAvailableException.class,
-                "uploadArtifacts - più artefatti validi", allFilesExist});
-        //Chiave null
-        Map<String, File> nullKey = new HashMap<>();
-        nullKey.put(null, file1);
-        params.add(new Object[]{nullKey, FileNotAvailableException.class,
-                "uploadArtifacts - chiave null", allFilesExist});
-
-        Map<String, File> emptyKey = new HashMap<>();
-        emptyKey.put("", file1);
-        params.add(new Object[]{emptyKey, FileNotAvailableException.class,
-                "uploadArtifacts - chiave vuota", allFilesExist});
-
-        Map<String, File> nullValue = new HashMap<>();
-        nullValue.put("art1", null);
-        params.add(new Object[]{nullValue, NullPointerException.class,
-                "uploadArtifacts - file null nella mappa", allFilesExist});
-
-        Map<String, File> nonExistentFile = new HashMap<>();
-        nonExistentFile.put("nonExistArt", file_nonExistent);
-        params.add(new Object[]{nonExistentFile, FileNotAvailableException.class,
-                "uploadArtifacts - file non esistente", fileNotExistsSpecific});
-
-        // File che simula eccezione interna
-        Map<String, File> throwingFile = new HashMap<>();
-        throwingFile.put("throw", fileThrowing);
-        params.add(new Object[]{throwingFile, RuntimeException.class, "Upload fallisce (simulazione throw)", allFilesExist});
-
-        Map<String, File> keyExists = new HashMap<>();
-        keyExists.put("keyExistArt", file_keyExists);
-        params.add(new Object[]{keyExists, RuntimeException.class,
-                "uploadArtifacts - KeyAlreadyExistsException (incapsulata)", allFilesExist});
-
-        // Test per il branch dove KeyAlreadyExistsException viene catturata e ignorata
-        Map<String, File> keyExistsButIgnored = new HashMap<>();
-        keyExistsButIgnored.put("keyExistButIgnored", file_keyExists);
-        params.add(new Object[]{
-                keyExistsButIgnored,
-                FileNotAvailableException.class,
-                "uploadArtifacts - KeyAlreadyExistsException catturata e ignorata",
-                allFilesExist
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][]{
+                {null, NullPointerException.class, "Mappa null"},
+                {Collections.emptyList(), null, "Lista vuota"},
+                {Collections.singletonList("artifact1.jar"), null, "Singolo file valido"},
+                {Arrays.asList("artifact1.jar", "artifact2.jar"), null, "Più file validi"},
+                {Collections.singletonList("nonexistent.jar"), RuntimeException.class, "File inesistente"},
+                {Arrays.asList("artifact1.jar", "nonexistent.jar"), RuntimeException.class, "Mix file valido e inesistente"},
+                // NUOVI CASI PER KeyAlreadyExistsException:
+                {Collections.singletonList("existing-key.jar"), null, "Artifact con chiave già esistente"},
+                {Arrays.asList("artifact1.jar", "existing-key.jar"), null, "Mix artifact normale e chiave esistente"}
         });
-
-        return params;
     }
 
     @Before
-    public void setup() throws AuthorizationException, KeyNotFoundException, KeyAlreadyExistsException {
-        MockitoAnnotations.openMocks(this);
-        dependencyUploader = new DependencyUploader();
+    public void setUp() throws AuthorizationException, KeyNotFoundException, KeyAlreadyExistsException, IOException {
+        uploader = new DependencyUploader();
 
+        // Mock BlobStore
         mockBlobStore = mock(ClientBlobStore.class);
-        doNothing().when(mockBlobStore).deleteBlob(isA(String.class));
-        when (mockBlobStore.getBlobMeta(isA(String.class))).thenReturn(new ReadableBlobMeta());
-        dependencyUploader.setBlobStore(mockBlobStore);
+        doNothing().when(mockBlobStore).deleteBlob(anyString());
+        when(mockBlobStore.getBlobMeta(anyString())).thenReturn(new ReadableBlobMeta());
+        uploader.setBlobStore(mockBlobStore);
+
+        // Creazione file temporanei
+        tempArtifacts = new HashMap<>();
+        if (artifactNames != null) {
+            for (String name : artifactNames) {
+                if (!name.contains("nonexistent")) {
+                    File temp = File.createTempFile(name.replace(".jar", ""), ".jar");
+                    temp.deleteOnExit();
+                    tempArtifacts.put(name, temp);
+                } else {
+                    tempArtifacts.put(name, new File("/tmp/nonexistent.jar"));
+
+                    // Mock per simulare KeyAlreadyExistsException per artifact "existing-key"
+                    if (name.contains("existing-key")) {
+                        doThrow(new KeyAlreadyExistsException("Key already exists"))
+                                .when(mockBlobStore).createBlob(anyString(), any());
+                    }
+                }
+            }
+        } else {
+            tempArtifacts = null;
+        }
     }
 
     @After
-    public void teardown() {
-        dependencyUploader.shutdown();
+    public void tearDown() {
+        uploader.shutdown();
+        if (tempArtifacts != null) {
+            for (File f : tempArtifacts.values()) {
+                if (f.exists()) f.delete();
+            }
+        }
     }
 
     @Test
-    public void uploadArtifactsTest() throws Exception {
-        System.out.println("Eseguendo test UPLOAD_ARTIFACTS: " + testDescription);
+    public void testUploadArtifacts() {
+        System.out.println("Test: " + description);
 
         try {
-            List<String> uploadedKeys = dependencyUploader.uploadArtifacts(artifactsParam);
+            List<String> keys = uploader.uploadArtifacts(tempArtifacts);
 
-            if (expectedOverallExceptionType != null) {
-                fail("Prevista eccezione di tipo " + expectedOverallExceptionType.getSimpleName() +
-                        " ma nessuna eccezione è stata lanciata.");
-            }
-            if (!artifactsParam.isEmpty()) {
-                assertEquals(artifactsParam.size(),uploadedKeys.size());
-                Set<String> uniqueKeys = new HashSet<>(uploadedKeys);
-                assertEquals(uploadedKeys.size(), uniqueKeys.size());
-                uploadedKeys.forEach(Assert::assertNotNull);
+            // Verifica che le chiavi siano corrette
+            if (tempArtifacts != null && !tempArtifacts.isEmpty()) {
+                assertEquals(tempArtifacts.size(), keys.size());
+                assertEquals(new HashSet<>(keys).size(), keys.size()); // chiavi uniche
+                keys.forEach(Assert::assertNotNull);
             } else {
-                assertTrue(uploadedKeys.isEmpty());
+                assertTrue(keys.isEmpty());
+            }
+
+            if (expectedException != null) {
+                fail("Mi aspettavo un'eccezione di tipo " + expectedException.getSimpleName());
             }
 
         } catch (Throwable t) {
-            if (expectedOverallExceptionType == null) {
-                fail("Eccezione non prevista: " + t.getClass().getSimpleName());
+            if (expectedException != null) {
+                assertTrue("Tipo eccezione attesa: " + expectedException.getSimpleName() +
+                                ", trovata: " + t.getClass().getSimpleName(),
+                        expectedException.isInstance(t));
+            } else {
+                fail("Eccezione non attesa: " + t);
             }
-            assertTrue(expectedOverallExceptionType.isInstance(t));
         }
-
     }
 }

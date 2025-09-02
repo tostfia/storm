@@ -196,7 +196,7 @@
                         <exclude>**/randoop/**</exclude>
                     </excludes>
                     <!-- Questa riga è cruciale per JaCoCo, assicura che l'agente sia usato durante i test -->
-                   <!-- <argLine>${argLine}</argLine>-->
+                    <argLine>${argLine}</argLine>
                     <!-- Mantieni eventuali altre configurazioni che avevi, come reportsDirectories se fossero qui -->
                     <!-- Nel tuo caso, le reportsDirectories sono nel surefire-report-plugin,
                          quindi non le mettiamo qui a meno che tu non le voglia anche per il plugin di esecuzione test. -->
@@ -319,7 +319,7 @@
                     </mutators>
                 </configuration>
             </plugin>
-            <plugin>
+           <plugin>
                 <groupId>org.evosuite.plugins</groupId>
                 <artifactId>evosuite-maven-plugin</artifactId>
                 <version>1.0.5</version>
