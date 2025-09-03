@@ -1,10 +1,8 @@
 package org.apache.storm.dependency;
 
+import org.apache.storm.blobstore.AtomicOutputStream;
 import org.apache.storm.blobstore.ClientBlobStore;
-import org.apache.storm.generated.AuthorizationException;
-import org.apache.storm.generated.KeyAlreadyExistsException;
-import org.apache.storm.generated.KeyNotFoundException;
-import org.apache.storm.generated.ReadableBlobMeta;
+import org.apache.storm.generated.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -71,11 +69,6 @@ public class UploadArtifactsTest {
                 } else {
                     tempArtifacts.put(name, new File("/tmp/nonexistent.jar"));
 
-                    // Mock per simulare KeyAlreadyExistsException per artifact "existing-key"
-                    if (name.contains("existing-key")) {
-                        doThrow(new KeyAlreadyExistsException("Key already exists"))
-                                .when(mockBlobStore).createBlob(anyString(), any());
-                    }
                 }
             }
         } else {

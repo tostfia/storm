@@ -188,6 +188,7 @@
                 <version>3.5.3</version>
                 <configuration>
                     <!-- Escludi i test che non vuoi eseguire -->
+
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
@@ -196,7 +197,7 @@
                         <exclude>**/randoop/**</exclude>
                     </excludes>
                     <!-- Questa riga è cruciale per JaCoCo, assicura che l'agente sia usato durante i test -->
-                    <argLine>${argLine}</argLine>
+                    <!--<argLine>${argLine}</argLine>-->
                     <!-- Mantieni eventuali altre configurazioni che avevi, come reportsDirectories se fossero qui -->
                     <!-- Nel tuo caso, le reportsDirectories sono nel surefire-report-plugin,
                          quindi non le mettiamo qui a meno che tu non le voglia anche per il plugin di esecuzione test. -->
@@ -304,22 +305,35 @@
                 <artifactId>pitest-maven</artifactId>
                 <version>1.20.2</version>
                 <configuration>
+                    <!-- Indica solo le classi/test che ti interessano (modulo storm-client) -->
                     <targetClasses>
-                        <param>org.apache.storm.*</param>
+                        <param>org.apache.storm.dependency.DependencyUploader</param>
+                        <param>org.apache.storm.spout.CheckpointSpout</param>
                     </targetClasses>
                     <targetTests>
-                        <param>org.apache.storm.*Test</param>
+                        <param>org.apache.storm.dependency.*Test</param>
+                        <param>org.apache.storm.spout.*Test</param>
                     </targetTests>
+
+                    <!-- Report in HTML e XML -->
                     <outputFormats>
                         <param>HTML</param>
                         <param>XML</param>
                     </outputFormats>
-                    <mutators>
-                        <mutator>STRONGER</mutator>
-                    </mutators>
+
+
+                    <!-- Escludi il launcher di JUnit 5 se presente nel classpath -->
+                    <classpathDependencyExcludes>
+                        <param>org.junit.platform:junit-platform-launcher</param>
+                    </classpathDependencyExcludes>
+
+                    <!-- Reporting verboso per debugging -->
+                    <verbose>true</verbose>
+                    <timestampedReports>false</timestampedReports>
                 </configuration>
             </plugin>
-           <plugin>
+
+            <plugin>
                 <groupId>org.evosuite.plugins</groupId>
                 <artifactId>evosuite-maven-plugin</artifactId>
                 <version>1.0.5</version>

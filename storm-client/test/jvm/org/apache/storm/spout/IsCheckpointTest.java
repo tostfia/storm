@@ -12,7 +12,8 @@ import org.mockito.MockitoAnnotations;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -23,10 +24,13 @@ public class IsCheckpointTest {
     public Object param;
 
     @Parameterized.Parameter(1)
-    public Class<? extends Throwable> expectedResult;
+    public Class<? extends Throwable> expectedException; // Rinomina per chiarezza: ora gestisce solo le eccezioni
 
     @Parameterized.Parameter(2)
-    public String description;
+    public Boolean expectedBooleanReturn; // NUOVO: Valore booleano atteso dal metodo isCheckpoint()
+
+    @Parameterized.Parameter(3)
+    public String description; // Indice spostato
 
     private CheckpointSpout spout;
     private TopologyContext context;
@@ -48,35 +52,44 @@ public class IsCheckpointTest {
 
     @Test
     public void testIsCheckpoint() {
-        try {
-            spout.isCheckpoint((Tuple) param);
-            assertNull("Nessuna eccezione attesa", expectedResult);
-        } catch (Throwable e) {
-            assertEquals("Eccezione attesa non corrisponde", expectedResult, e.getClass());
+        if (expectedException != null) {
+            // Caso in cui ci si aspetta un'eccezione
+            try {
+                CheckpointSpout.isCheckpoint((Tuple) param);
+                fail("Prevista eccezione " + expectedException.getSimpleName() + " ma nessuna eccezione è stata lanciata per: " + description);
+            } catch (Throwable e) {
+                assertEquals("Il tipo di eccezione attesa non corrisponde per: " + description, expectedException, e.getClass());
+            }
+        } else {
+            // Caso in cui non ci si aspetta un'eccezione, quindi si verifica il valore booleano di ritorno
+            assertNotNull("Il valore booleano di ritorno atteso non può essere null quando non è prevista alcuna eccezione per: " + description, expectedBooleanReturn);
+            boolean actualResult = CheckpointSpout.isCheckpoint((Tuple) param);
+            assertEquals("Il valore di ritorno non corrisponde per: " + description, expectedBooleanReturn, actualResult);
         }
     }
 
-    @Parameterized.Parameters(name = "{2}")
+    @Parameterized.Parameters(name = "{3}") // L'indice della descrizione è ora 3
     public static Object[][] data() {
-        // Tuple validi
+        // Tuple valide
         Tuple checkpointTuple = mock(Tuple.class);
-        when(checkpointTuple.getValueByField("checkpoint")).thenReturn(true);
+        when(checkpointTuple.getSourceStreamId()).thenReturn(CheckpointSpout.CHECKPOINT_STREAM_ID);
 
         Tuple normalTuple = mock(Tuple.class);
-        when(normalTuple.getValueByField("checkpoint")).thenReturn(false);
+        when(normalTuple.getSourceStreamId()).thenReturn("some-other-stream-id"); // Un ID stream qualsiasi non di checkpoint
 
-        Tuple tupleWithNullField = mock(Tuple.class);
-        when(tupleWithNullField.getValueByField("checkpoint")).thenReturn(null);
+        Tuple tupleWithNullStreamId = mock(Tuple.class);
+        when(tupleWithNullStreamId.getSourceStreamId()).thenReturn(null);
 
         return new Object[][] {
-                {checkpointTuple, null, "isCheckpoint - tuple valida checkpoint"},
-                {normalTuple, null, "isCheckpoint - tuple valida non checkpoint"},
-                {tupleWithNullField, null, "isCheckpoint - tuple con campo checkpoint null"},
-                {null, NullPointerException.class, "isCheckpoint - tuple null"},
-                {"NonTuple", ClassCastException.class, "isCheckpoint - input String (non Tuple)"},
-                {123, ClassCastException.class, "isCheckpoint - input Integer (non Tuple)"},
-                {3.14, ClassCastException.class, "isCheckpoint - input Double (non Tuple)"},
-                {new Object(), ClassCastException.class, "isCheckpoint - oggetto generico"}
+                // param, expectedException, expectedBooleanReturn, description
+                {checkpointTuple, null, true, "isCheckpoint - tuple valida checkpoint"},
+                {normalTuple, null, false, "isCheckpoint - tuple valida non checkpoint"},
+                {tupleWithNullStreamId, null, false, "isCheckpoint - tuple con campo checkpoint null"}, // Assumendo che un campo null non sia un checkpoint
+                {null, NullPointerException.class, null, "isCheckpoint - tuple null"}, // Nessun valore booleano atteso per i casi di eccezione
+                {"NonTuple", ClassCastException.class, null, "isCheckpoint - input String (non Tuple)"},
+                {123, ClassCastException.class, null, "isCheckpoint - input Integer (non Tuple)"},
+                {3.14, ClassCastException.class, null, "isCheckpoint - input Double (non Tuple)"},
+                {new Object(), ClassCastException.class, null, "isCheckpoint - oggetto generico"}
         };
     }
 }

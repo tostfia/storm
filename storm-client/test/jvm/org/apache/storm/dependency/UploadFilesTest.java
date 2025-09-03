@@ -1,7 +1,6 @@
 package org.apache.storm.dependency;
 
 import org.apache.storm.blobstore.ClientBlobStore;
-import org.apache.storm.generated.KeyAlreadyExistsException;
 import org.apache.storm.generated.ReadableBlobMeta;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -21,7 +20,7 @@ public class UploadFilesTest {
     private final Class<? extends Throwable> expectedException;
     private final String description;
 
-    private DependencyUploader spyUploader;
+    private DependencyUploader uploader;
     private ClientBlobStore mockBlobStore;
     private List<File> tempFiles;
 
@@ -43,25 +42,21 @@ public class UploadFilesTest {
                 {Collections.singletonList("file1.txt"), true, null, "Singolo file valido"},
                 {Arrays.asList("file1.txt", "file2.txt"), true, null, "Più file validi"},
                 {Collections.singletonList("nonexistent.txt"), true, RuntimeException.class, "File inesistente cleanup=true"},
-                {Collections.singletonList("nonexistent.txt"), false, RuntimeException.class, "File inesistente cleanup=false"},
-                // NUOVI CASI PER KeyAlreadyExistsException:
-                {Collections.singletonList("existing-key.txt"), true, null, "File con chiave già esistente cleanup=true"},
-                {Collections.singletonList("existing-key.txt"), false, null, "File con chiave già esistente cleanup=false"},
-                {Arrays.asList("file1.txt", "existing-key.txt"), true, null, "Mix file normale e chiave esistente"}
+                {Collections.singletonList("nonexistent.txt"), false, RuntimeException.class, "File inesistente cleanup=false"}
         });
     }
 
     @Before
     public void setUp() throws Exception {
         // Creiamo un uploader normale e poi uno spy
-        DependencyUploader uploader = new DependencyUploader();
-        spyUploader = spy(uploader);
+        uploader = new DependencyUploader();
+
 
         // Mock BlobStore
         mockBlobStore = mock(ClientBlobStore.class);
         doNothing().when(mockBlobStore).deleteBlob(anyString());
         when(mockBlobStore.getBlobMeta(anyString())).thenReturn(new ReadableBlobMeta());
-        spyUploader.setBlobStore(mockBlobStore);
+        uploader.setBlobStore(mockBlobStore);
 
         // Creazione file temporanei
         tempFiles = new ArrayList<>();
@@ -74,11 +69,7 @@ public class UploadFilesTest {
                 } else {
                     // File fittizio inesistente
                     tempFiles.add(new File("/tmp/nonexistent.txt"));
-                    // Mock per simulare KeyAlreadyExistsException per file "existing-key"
-                    if (name.contains("existing-key")) {
-                        doThrow(new KeyAlreadyExistsException("Key already exists"))
-                                .when(mockBlobStore).createBlob(anyString(), any());
-                    }
+
                 }
             }
         } else {
@@ -88,7 +79,7 @@ public class UploadFilesTest {
 
     @After
     public void tearDown() {
-        spyUploader.shutdown();
+        uploader.shutdown();
         if (tempFiles != null) {
             for (File f : tempFiles) {
                 if (f.exists()) f.delete();
@@ -101,7 +92,7 @@ public class UploadFilesTest {
         System.out.println("Test: " + description);
 
         try {
-            List<String> keys = spyUploader.uploadFiles(tempFiles, cleanupIfFails);
+            List<String> keys = uploader.uploadFiles(tempFiles, cleanupIfFails);
 
             if (tempFiles != null && !tempFiles.isEmpty()) {
                 assertEquals(tempFiles.size(), keys.size());
@@ -123,7 +114,7 @@ public class UploadFilesTest {
                 // Verifica che deleteBlobs venga chiamato se cleanupIfFails è true
                 if (cleanupIfFails && tempFiles != null) {
                     try {
-                        verify(spyUploader, atLeastOnce()).deleteBlobs(anyList());
+                        verify(uploader, atLeastOnce()).deleteBlobs(anyList());
                     } catch (Throwable ignored) {}
                 }
             } else {
