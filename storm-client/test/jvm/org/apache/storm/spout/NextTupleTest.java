@@ -195,7 +195,7 @@ public class NextTupleTest {
         }
     }
 
-    // HO RIMOSSO testSleepOriginalLogicPasses()
+
 
     @Test
     public void testNextTupleCheckpointBranch() throws IllegalAccessException {
@@ -226,17 +226,4 @@ public class NextTupleTest {
         assertTrue("checkpointStepInProgress dovrebbe essere true dopo startProgress() in questo ramo", isCheckpointStepInProgress());
     }
 
-    public static class CheckPointState {
-        public long txid;
-        public State state;
-
-        public CheckPointState(long txid, State state) {
-            this.txid = txid;
-            this.state = state;
-        }
-
-        public enum State {
-            PREPARING, COMMITTING, COMMITTED;
-        }
-    }
 }

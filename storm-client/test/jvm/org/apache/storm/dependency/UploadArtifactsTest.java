@@ -42,9 +42,9 @@ public class UploadArtifactsTest {
                 {Arrays.asList("artifact1.jar", "artifact2.jar"), null, "Più file validi"},
                 {Collections.singletonList("nonexistent.jar"), RuntimeException.class, "File inesistente"},
                 {Arrays.asList("artifact1.jar", "nonexistent.jar"), RuntimeException.class, "Mix file valido e inesistente"},
-                // NUOVI CASI PER KeyAlreadyExistsException:
                 {Collections.singletonList("existing-key.jar"), null, "Artifact con chiave già esistente"},
                 {Arrays.asList("artifact1.jar", "existing-key.jar"), null, "Mix artifact normale e chiave esistente"}
+
         });
     }
 
@@ -68,6 +68,11 @@ public class UploadArtifactsTest {
                     tempArtifacts.put(name, temp);
                 } else {
                     tempArtifacts.put(name, new File("/tmp/nonexistent.jar"));
+                    // Mock per simulare KeyAlreadyExistsException per artifact "existing-key"
+                    if (name.contains("existing-key")) {
+                        doThrow(new KeyAlreadyExistsException("Key already exists"))
+                                .when(mockBlobStore).createBlob(anyString(), any());
+                    }
 
                 }
             }

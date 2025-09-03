@@ -1,7 +1,11 @@
 package org.apache.storm.dependency;
 
+import org.apache.storm.blobstore.AtomicOutputStream;
 import org.apache.storm.blobstore.ClientBlobStore;
+import org.apache.storm.generated.KeyAlreadyExistsException;
+import org.apache.storm.generated.KeyNotFoundException;
 import org.apache.storm.generated.ReadableBlobMeta;
+import org.apache.storm.generated.SettableBlobMeta;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,13 +46,16 @@ public class UploadFilesTest {
                 {Collections.singletonList("file1.txt"), true, null, "Singolo file valido"},
                 {Arrays.asList("file1.txt", "file2.txt"), true, null, "Più file validi"},
                 {Collections.singletonList("nonexistent.txt"), true, RuntimeException.class, "File inesistente cleanup=true"},
-                {Collections.singletonList("nonexistent.txt"), false, RuntimeException.class, "File inesistente cleanup=false"}
+                {Collections.singletonList("nonexistent.txt"), false, RuntimeException.class, "File inesistente cleanup=false"},
+                {Collections.singletonList("existing-key.txt"), true, null, "File con chiave già esistente cleanup=true"},
+                {Collections.singletonList("existing-key.txt"), false, null, "File con chiave già esistente cleanup=false"},
+                {Arrays.asList("file1.txt", "existing-key.txt"), true, null, "Mix file normale e chiave esistente"}
         });
     }
 
     @Before
     public void setUp() throws Exception {
-        // Creiamo un uploader normale e poi uno spy
+
         uploader = new DependencyUploader();
 
 
@@ -69,6 +76,10 @@ public class UploadFilesTest {
                 } else {
                     // File fittizio inesistente
                     tempFiles.add(new File("/tmp/nonexistent.txt"));
+                    if (name.contains("existing-key")) {
+                        doThrow(new KeyAlreadyExistsException("Key already exists"))
+                                .when(mockBlobStore).createBlob(anyString(), any());
+                    }
 
                 }
             }
