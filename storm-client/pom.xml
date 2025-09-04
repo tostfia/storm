@@ -140,6 +140,11 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-all</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -197,7 +202,7 @@
                         <exclude>**/randoop/**</exclude>
                     </excludes>
                     <!-- Questa riga è cruciale per JaCoCo, assicura che l'agente sia usato durante i test -->
-                    <argLine>${argLine}</argLine>
+                    <!--<argLine>${argLine}</argLine>-->
                     <!-- Mantieni eventuali altre configurazioni che avevi, come reportsDirectories se fossero qui -->
                     <!-- Nel tuo caso, le reportsDirectories sono nel surefire-report-plugin,
                          quindi non le mettiamo qui a meno che tu non le voglia anche per il plugin di esecuzione test. -->
@@ -333,24 +338,7 @@
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.evosuite.plugins</groupId>
-                <artifactId>evosuite-maven-plugin</artifactId>
-                <version>1.0.5</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate</goal>
-                            <goal>export</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <memoryInMB>2048</memoryInMB>
-                    <timeInMinutesPerClass>2</timeInMinutesPerClass>
-                    <criterion>LINE:BRANCH:EXCEPTION:WEAKMUTATION:OUTPUT:METHOD:CBRANCH</criterion>
-                </configuration>
-            </plugin>
+
 
 
             <plugin>
@@ -443,5 +431,8 @@
                 </plugins>
             </build>
         </profile>
+
+
+
     </profiles>
 </project>
