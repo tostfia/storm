@@ -2,15 +2,14 @@ package org.apache.storm.dependency;
 
 import org.apache.storm.blobstore.AtomicOutputStream;
 import org.apache.storm.blobstore.ClientBlobStore;
-import org.apache.storm.generated.KeyAlreadyExistsException;
 import org.apache.storm.generated.KeyNotFoundException;
 import org.apache.storm.generated.ReadableBlobMeta;
-import org.apache.storm.generated.SettableBlobMeta;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -25,7 +24,6 @@ public class UploadFilesTest {
     private final String description;
 
     private DependencyUploader uploader;
-    private ClientBlobStore mockBlobStore;
     private List<File> tempFiles;
 
     public UploadFilesTest(List<String> fileNames,
@@ -49,44 +47,52 @@ public class UploadFilesTest {
                 {Collections.singletonList("nonexistent.txt"), false, RuntimeException.class, "File inesistente cleanup=false"},
                 {Collections.singletonList("existing-key.txt"), true, null, "File con chiave già esistente cleanup=true"},
                 {Collections.singletonList("existing-key.txt"), false, null, "File con chiave già esistente cleanup=false"},
-                {Arrays.asList("file1.txt", "existing-key.txt"), true, null, "Mix file normale e chiave esistente"}
+                {Arrays.asList("file1.txt", "existing-key.txt"), true, null, "Mix file normale e chiave esistente"},
+
+
+
         });
     }
 
     @Before
     public void setUp() throws Exception {
-
-        uploader = new DependencyUploader();
-
+        DependencyUploader realUploader = new DependencyUploader();
+        uploader = spy(realUploader);
 
         // Mock BlobStore
-        mockBlobStore = mock(ClientBlobStore.class);
-        doNothing().when(mockBlobStore).deleteBlob(anyString());
-        when(mockBlobStore.getBlobMeta(anyString())).thenReturn(new ReadableBlobMeta());
+        ClientBlobStore mockBlobStore = mock(ClientBlobStore.class);
+
+        when(mockBlobStore.getBlobMeta(anyString())).thenThrow(new org.apache.storm.generated.KeyNotFoundException());
+        when(mockBlobStore.createBlob(anyString(), any())).thenReturn(mock(org.apache.storm.blobstore.AtomicOutputStream.class));
         uploader.setBlobStore(mockBlobStore);
 
-        // Creazione file temporanei
         tempFiles = new ArrayList<>();
+
         if (fileNames != null) {
             for (String name : fileNames) {
-                if (!name.contains("nonexistent")) {
-                    File temp = File.createTempFile(name.replace(".txt", ""), ".txt");
-                    temp.deleteOnExit();
-                    tempFiles.add(temp);
-                } else {
-                    // File fittizio inesistente
-                    tempFiles.add(new File("/tmp/nonexistent.txt"));
-                    if (name.contains("existing-key")) {
-                        doThrow(new KeyAlreadyExistsException("Key already exists"))
-                                .when(mockBlobStore).createBlob(anyString(), any());
-                    }
+                File temp;
 
+                if (!name.contains("nonexistent")) {
+                    // File temporaneo reale
+                    temp = File.createTempFile(name.replace(".txt", ""), ".txt");
+                    temp.deleteOnExit();
+                } else {
+                    // File inesistente
+                    temp = new File("/tmp/" + name);
                 }
+
+                tempFiles.add(temp);
+
             }
         } else {
             tempFiles = null;
         }
+
     }
+
+
+
+
 
     @After
     public void tearDown() {
@@ -128,9 +134,13 @@ public class UploadFilesTest {
                         verify(uploader, atLeastOnce()).deleteBlobs(anyList());
                     } catch (Throwable ignored) {}
                 }
+
             } else {
                 fail("Eccezione non attesa: " + t);
             }
         }
     }
+
+
+
 }

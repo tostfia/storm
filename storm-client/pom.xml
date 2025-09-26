@@ -192,20 +192,17 @@
                 <!-- Dal tuo log, la versione è 3.2.5. Quindi useremo quella. -->
                 <version>3.5.3</version>
                 <configuration>
-                    <!-- Escludi i test che non vuoi eseguire -->
 
                     <includes>
-                        <include>**/*Test.java</include>
+                        <include>**/*Test</include>
                     </includes>
                     <excludes>
-                        <exclude>**/*TestLlm.java</exclude>
                         <exclude>**/randoop/**</exclude>
+                        <exclude>**/*LlmTest</exclude>
                     </excludes>
-                    <!-- Questa riga è cruciale per JaCoCo, assicura che l'agente sia usato durante i test -->
-                    <!--<argLine>${argLine}</argLine>-->
-                    <!-- Mantieni eventuali altre configurazioni che avevi, come reportsDirectories se fossero qui -->
-                    <!-- Nel tuo caso, le reportsDirectories sono nel surefire-report-plugin,
-                         quindi non le mettiamo qui a meno che tu non le voglia anche per il plugin di esecuzione test. -->
+
+                    <argLine>${argLine}</argLine>
+
                 </configuration>
                 <dependencies>
                     <dependency>

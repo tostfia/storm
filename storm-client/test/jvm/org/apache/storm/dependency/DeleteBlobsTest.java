@@ -44,10 +44,7 @@ public class DeleteBlobsTest {
         dependencyUploader.setBlobStore(mockBlobStore);
     }
 
-    @After
-    public void teardown() {
-        // eventual shutdown
-    }
+
 
     @Parameterized.Parameters(name = "{index}: {3}")
     public static Collection<Object[]> data() {

@@ -1,18 +1,25 @@
 package org.apache.storm.dependency;
 
+import org.apache.storm.blobstore.ClientBlobStore;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.Collections;
 
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.*;
+
 public class DependencyUploaderInitShutdownTest {
 
     private DependencyUploader uploader;
+    private ClientBlobStore mockBlobStore;
 
     @Before
     public void setUp() {
         uploader = new DependencyUploader();
+        mockBlobStore = mock(ClientBlobStore.class);
+        uploader.setBlobStore(mockBlobStore); // iniettiamo il mock
     }
 
     @Test
@@ -32,13 +39,18 @@ public class DependencyUploaderInitShutdownTest {
 
     @Test
     public void testShutdownWithoutInitDoesNotThrow() {
+        // rimuoviamo il blobStore per simulare "senza init"
+        uploader.setBlobStore(null);
         uploader.shutdown(); // dovrebbe completarsi senza eccezioni
     }
 
     @Test
     public void testDoubleShutdownIsSafe() {
-        uploader.init();
         uploader.shutdown();
         uploader.shutdown(); // seconda chiamata sicura
+        verify(mockBlobStore, times(2)).shutdown(); // se vuoi riflettere la realtà
+
     }
+
+
 }
