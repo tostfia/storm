@@ -17,12 +17,11 @@ import static org.mockito.Mockito.*;
 public class UploadFilesLlmTest {
 
     private DependencyUploader uploader;
-    private ClientBlobStore mockBlobStore;
 
     @Before
     public void setup() {
         uploader = new DependencyUploader();
-        mockBlobStore = mock(ClientBlobStore.class);
+        ClientBlobStore mockBlobStore = mock(ClientBlobStore.class);
 
         try {
             when(mockBlobStore.getBlobMeta(anyString())).thenThrow(new org.apache.storm.generated.KeyNotFoundException());
@@ -55,8 +54,7 @@ public class UploadFilesLlmTest {
             assertNotNull("Generated key should not be null", key);
             assertFalse("Generated key should not be empty", key.trim().isEmpty());
 
-            // Se vuoi testare il contenuto, fallo solo se hai conferma del formato
-            // assertTrue("Key should contain 'valid'", key.contains("valid"));
+
         } catch (RuntimeException e) {
             System.out.println("RuntimeException caught: " + e.getMessage());
             if (e.getCause() != null) {

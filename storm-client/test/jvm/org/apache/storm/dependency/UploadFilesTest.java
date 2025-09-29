@@ -1,15 +1,11 @@
 package org.apache.storm.dependency;
 
-import org.apache.storm.blobstore.AtomicOutputStream;
 import org.apache.storm.blobstore.ClientBlobStore;
-import org.apache.storm.generated.KeyNotFoundException;
-import org.apache.storm.generated.ReadableBlobMeta;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -56,10 +52,9 @@ public class UploadFilesTest {
 
     @Before
     public void setUp() throws Exception {
-        DependencyUploader realUploader = new DependencyUploader();
-        uploader = spy(realUploader);
+        uploader = new DependencyUploader();
 
-        // Mock BlobStore
+
         ClientBlobStore mockBlobStore = mock(ClientBlobStore.class);
 
         when(mockBlobStore.getBlobMeta(anyString())).thenThrow(new org.apache.storm.generated.KeyNotFoundException());
@@ -106,8 +101,6 @@ public class UploadFilesTest {
 
     @Test
     public void testUploadFiles() {
-        System.out.println("Test: " + description);
-
         try {
             List<String> keys = uploader.uploadFiles(tempFiles, cleanupIfFails);
 
@@ -130,9 +123,7 @@ public class UploadFilesTest {
                         expectedException.isInstance(t));
                 // Verifica che deleteBlobs venga chiamato se cleanupIfFails è true
                 if (cleanupIfFails && tempFiles != null) {
-                    try {
-                        verify(uploader, atLeastOnce()).deleteBlobs(anyList());
-                    } catch (Throwable ignored) {}
+                    verify(uploader, atLeastOnce()).deleteBlobs(anyList());
                 }
 
             } else {
