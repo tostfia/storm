@@ -36,9 +36,7 @@ public class UploadFilesLlmTest {
         File validFile = File.createTempFile("valid", ".jar");
         validFile.deleteOnExit();
 
-        System.out.println("File path: " + validFile.getAbsolutePath());
-        System.out.println("File exists: " + validFile.exists());
-        System.out.println("File readable: " + validFile.canRead());
+
 
         try {
             List<String> keys = uploader.uploadFiles(Collections.singletonList(validFile), false);
