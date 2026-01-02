@@ -21,7 +21,6 @@ public class UploadArtifactsTest {
     private final String description;
 
     private DependencyUploader uploader;
-    private ClientBlobStore mockBlobStore;
     private Map<String, File> tempArtifacts;
 
     public UploadArtifactsTest(List<String> artifactNames,
@@ -52,7 +51,7 @@ public class UploadArtifactsTest {
         uploader = new DependencyUploader();
 
         // Mock BlobStore
-        mockBlobStore = mock(ClientBlobStore.class);
+        ClientBlobStore mockBlobStore = mock(ClientBlobStore.class);
         doNothing().when(mockBlobStore).deleteBlob(anyString());
         when(mockBlobStore.getBlobMeta(anyString())).thenReturn(new ReadableBlobMeta());
         uploader.setBlobStore(mockBlobStore);
