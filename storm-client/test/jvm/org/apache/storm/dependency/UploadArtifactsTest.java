@@ -1,6 +1,5 @@
 package org.apache.storm.dependency;
 
-import org.apache.storm.blobstore.AtomicOutputStream;
 import org.apache.storm.blobstore.ClientBlobStore;
 import org.apache.storm.generated.*;
 import org.junit.*;
