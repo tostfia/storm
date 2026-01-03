@@ -249,7 +249,12 @@ public class FailTest {
                 {Arrays.asList(1L,2L), null, "fail - List di Long"},
 
                 // Oggetto custom
-                {new CustomMsgId(), null, "fail - Custom object non compatibile"}
+                {new CustomMsgId(), null, "fail - Custom object non compatibile"},
+
+                {Long.MIN_VALUE, null, "fail - Long.MIN_VALUE"},
+                {Long.MAX_VALUE, null, "fail - Long.MAX_VALUE"},
+                {122L, null, "fail - txid - 1"},
+                {124L, null, "fail - txid + 1"},
         });
     }
 

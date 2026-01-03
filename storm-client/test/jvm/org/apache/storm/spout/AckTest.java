@@ -156,7 +156,11 @@ public class AckTest {
                 {new Long[]{1L,2L}, ClassCastException.class, "ack - Array di Long"},
                 {new int[]{1,2}, ClassCastException.class, "ack - Array di int"},
                 {Arrays.asList(1L,2L), ClassCastException.class, "ack - List di Long"},
-                {new CustomMsgId(), ClassCastException.class, "ack - Custom object non compatibile"}
+                {new CustomMsgId(), ClassCastException.class, "ack - Custom object non compatibile"},
+                {Long.MIN_VALUE, null, "ack - Long.MIN_VALUE"},
+                {Long.MAX_VALUE, null, "ack - Long.MAX_VALUE"},
+                {122L, null, "ack - txid - 1 (mismatch)"},
+                {124L, null, "ack - txid + 1 (mismatch)"},
         });
     }
 
