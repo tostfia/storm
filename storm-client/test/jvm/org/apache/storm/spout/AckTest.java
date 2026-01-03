@@ -2,7 +2,6 @@ package org.apache.storm.spout;
 
 import org.apache.storm.state.InMemoryKeyValueState;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.spout.SpoutOutputCollector;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
