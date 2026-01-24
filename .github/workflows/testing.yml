@@ -1,4 +1,4 @@
-name: Build and Test BookKeeper
+name: Build and Test Storm
 
 on:
   push:
