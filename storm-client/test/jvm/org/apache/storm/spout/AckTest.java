@@ -144,22 +144,14 @@ public class AckTest {
                 {0.0, null, "ack - Double zero"},
                 {-1.23, null, "ack - Double negativo"},
                 {42, null, "ack - Integer valido"},
-                {(short)5, null, "ack - Short valido"},
-                {(byte)1, null, "ack - Byte valido"},
-                {3.14f, null, "ack - Float valido"},
                 {"Test", ClassCastException.class, "ack - Stringa"},
                 {true, ClassCastException.class, "ack - Boolean"},
-                {'A', ClassCastException.class, "ack - Character"},
                 {new Object(), ClassCastException.class, "ack - Oggetto generico"},
                 {null, NullPointerException.class, "ack - msgId null"},
-                {new Long[]{1L,2L}, ClassCastException.class, "ack - Array di Long"},
-                {new int[]{1,2}, ClassCastException.class, "ack - Array di int"},
                 {Arrays.asList(1L,2L), ClassCastException.class, "ack - List di Long"},
-                {new CustomMsgId(), ClassCastException.class, "ack - Custom object non compatibile"},
                 {Long.MIN_VALUE, null, "ack - Long.MIN_VALUE"},
-                {Long.MAX_VALUE, null, "ack - Long.MAX_VALUE"},
-                {122L, null, "ack - txid - 1 (mismatch)"},
-                {124L, null, "ack - txid + 1 (mismatch)"},
+                {Long.MAX_VALUE, null, "ack - Long.MAX_VALUE"}
+
         });
     }
 

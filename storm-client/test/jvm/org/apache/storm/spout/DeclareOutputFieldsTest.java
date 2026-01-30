@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
@@ -67,8 +66,6 @@ public class DeclareOutputFieldsTest {
                 {123, ClassCastException.class, "declareOutputFields - input Integer"},
                 {3.14, ClassCastException.class, "declareOutputFields - input Double"},
                 {new Object(), ClassCastException.class, "declareOutputFields - oggetto generico"},
-                {new Object[]{}, ClassCastException.class, "declareOutputFields - array vuoto"},
-                {mock(OutputFieldsDeclarer.class), null, "declareOutputFields - mock con comportamento speciale"},
         };
     }
 

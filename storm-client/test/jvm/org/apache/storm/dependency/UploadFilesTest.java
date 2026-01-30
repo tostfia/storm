@@ -42,9 +42,11 @@ public class UploadFilesTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {null, true, null, "Lista null"}, // nessuna eccezione attesa
+                {null, false, null, "Lista null senza cleanup"}, // nessuna eccezione attesa
                 {Collections.emptyList(), true, null, "Lista vuota"},
+                {Collections.emptyList(), false, null, "Lista vuota senza cleanup"},
                 {Collections.singletonList("file1.txt"), true, null, "Singolo file valido"},
-                {Collections.singletonList("nonexistent.txt"), true, RuntimeException.class, "File inesistente"},
+                {Collections.singletonList("nonexistent.txt"), true,FileNotAvailableException.class, "File inesistente"},
         });
     }
 

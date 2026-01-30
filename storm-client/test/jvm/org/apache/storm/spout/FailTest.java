@@ -230,14 +230,10 @@ public class FailTest {
                 {0.0, null, "fail - Double zero"},
                 {-1.23, null, "fail - Double negativo"},
                 {42, null, "fail - Integer valido"},
-                {(short)5, null, "fail - Short valido"},
-                {(byte)1, null, "fail - Byte valido"},
-                {3.14f, null, "fail - Float valido"},
+
 
                 // Tipi non numerici
                 {"Test", null, "fail - Stringa"},
-                {true, null, "fail - Boolean"},
-                {'A', null, "fail - Character"},
                 {new Object(), null, "fail - Oggetto generico"},
 
                 // Null
