@@ -201,7 +201,7 @@
                         <exclude>**/*LlmTest</exclude>
                     </excludes>
 
-                    <argLine>${argLine}</argLine>
+                    <!--<argLine>${argLine}</argLine>-->
 
                 </configuration>
                 <dependencies>
@@ -325,7 +325,7 @@
                         <param>XML</param>
                     </outputFormats>
 
-                    <mutators>
+                    <!--<mutators>
                         <mutator>CONDITIONALS_BOUNDARY</mutator>
                         <mutator>EMPTY_RETURNS</mutator>
                         <mutator>FALSE_RETURNS</mutator>
@@ -335,7 +335,7 @@
                         <mutator>NULL_RETURNS</mutator>
                         <mutator>PRIMITIVE_RETURNS</mutator>
                         <mutator>TRUE_RETURNS</mutator>
-                    </mutators>
+                    </mutators>-->
 
 
                     <!-- Escludi il launcher di JUnit 5 se presente nel classpath -->
