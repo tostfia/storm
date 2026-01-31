@@ -201,7 +201,7 @@
                         <exclude>**/*LlmTest</exclude>
                     </excludes>
 
-                    <!--<argLine>${argLine}</argLine>-->
+                    <argLine>${argLine}</argLine>
 
                 </configuration>
                 <dependencies>

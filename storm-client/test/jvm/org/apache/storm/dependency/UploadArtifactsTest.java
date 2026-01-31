@@ -39,6 +39,7 @@ public class UploadArtifactsTest {
                 {Collections.singletonList("artifact1.jar"), null, "Singolo file valido"},
                 {Arrays.asList("artifact1.jar", "artifact2.jar"), null, "Più file validi"},
                 {Collections.singletonList("nonexistent.jar"), FileNotAvailableException.class, "File inesistente"},
+                {Collections.singletonList("existing-key.jar"), null, "Artifact con chiave già esistente"},
                 {Arrays.asList("artifact1.jar", "nonexistent.jar"), FileNotAvailableException.class, "Mix file valido e inesistente"},
                 {Arrays.asList("artifact1.jar", "existing-key.jar"), null, "Mix artifact normale e chiave esistente"}
 

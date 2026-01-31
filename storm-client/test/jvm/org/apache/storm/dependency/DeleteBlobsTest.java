@@ -51,9 +51,9 @@ public class DeleteBlobsTest {
                 {null, TestResult.NULL_POINTER_EXCEPTION, Collections.emptyMap(), "Lista null"},
                 {Collections.emptyList(), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Lista vuota"},
                 {Arrays.asList("blob1","blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Due blob validi"},
-                //{Collections.singletonList((String) null), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob null gestito"},
-                //{Arrays.asList("blob1", null, "blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob misti con null"},
-               // {Arrays.asList("", "blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob con stringa vuota"}
+                {Collections.singletonList((String) null), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob null gestito"},
+                {Arrays.asList("blob1", null, "blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob misti con null"},
+                {Arrays.asList("", "blob2"), TestResult.NO_EXCEPTION, Collections.emptyMap(), "Blob con stringa vuota"}
 
         });
 

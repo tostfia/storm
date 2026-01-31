@@ -10,9 +10,9 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.spout.SpoutOutputCollector;
 
-import java.util.HashMap;
+
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CheckpointSpoutFullTest {
