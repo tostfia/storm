@@ -127,5 +127,28 @@ public class CheckpointSpoutFullTest {
         assertTrue(emittedRecovery.get());
     }
 
+    @Test
+    public void testSleepIntervalDerivedFromCheckpointInterval() throws Exception {
+        int checkpointInterval = 2000;
+
+        // Stato iniziale valido
+        state.put("__state", new CheckPointState(1L, CheckPointState.State.COMMITTED));
+
+        // open() è il punto dove sleepInterval viene calcolato
+        spout.open(this.context, this.collector, checkpointInterval, state);
+
+        // Osservazione white-box dello stato interno
+        java.lang.reflect.Field f =
+                CheckpointSpout.class.getDeclaredField("sleepInterval");
+        f.setAccessible(true);
+
+        int sleepInterval = (int) f.get(spout);
+
+        // Contratto funzionale:
+        // sleepInterval deve essere proporzionale e MOLTO più piccolo del checkpointInterval
+        assertEquals(checkpointInterval / 10, sleepInterval);
+    }
+
+
 }
 
